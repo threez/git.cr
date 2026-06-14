@@ -1,0 +1,17 @@
+name: git
+version: 0.1.0
+
+authors:
+  - Vincent Landgraf <vincent@landgrafx.de>
+
+crystal: '>= 1.18.0'
+
+license: MIT
+
+targets:
+  git-cr:
+    main: src/git_cr.cr
+
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba

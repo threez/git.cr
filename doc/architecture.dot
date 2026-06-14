@@ -1,0 +1,298 @@
+digraph git_architecture {
+  graph [
+    rankdir=TB
+    fontname="Helvetica Neue,Helvetica,Arial,sans-serif"
+    fontsize=12
+    bgcolor="#1e1e2e"
+    pad=0.6
+    splines=ortho
+    nodesep=0.5
+    ranksep=0.9
+  ]
+  node [
+    fontname="Helvetica Neue,Helvetica,Arial,sans-serif"
+    fontsize=11
+    shape=box
+    style="filled,rounded"
+    margin="0.18,0.12"
+    penwidth=0
+    color=none
+  ]
+  edge [
+    fontname="Helvetica Neue,Helvetica,Arial,sans-serif"
+    fontsize=9
+    color="#9ca3af"
+    arrowsize=0.7
+    penwidth=1.2
+    fontcolor="#d1d5db"
+  ]
+
+  // ── Public API ──────────────────────────────────────────────────────────────
+  subgraph cluster_api {
+    label="Public API"
+    fontcolor="#bfdbfe"
+    fontsize=13
+    fontname="Helvetica Neue Bold,Helvetica,Arial,sans-serif"
+    style="filled,rounded"
+    fillcolor="#1e3a5f"
+    color="#3b82f6"
+    penwidth=2
+
+    CLIENT [label="Git::Client\n.clone / .pull\n.reset / .sync" fillcolor="#3b82f6" fontcolor="white"]
+  }
+
+  // ── Transport Layer ──────────────────────────────────────────────────────────
+  subgraph cluster_transport {
+    label="Transport Layer"
+    fontcolor="#bbf7d0"
+    fontsize=13
+    fontname="Helvetica Neue Bold,Helvetica,Arial,sans-serif"
+    style="filled,rounded"
+    fillcolor="#14532d"
+    color="#22c55e"
+    penwidth=2
+
+    URL     [label="RemoteUrl\nparse + scheme" fillcolor="#15803d" fontcolor="white"]
+    CREDS   [label="Credentials\nBasic / Bearer" fillcolor="#15803d" fontcolor="white"]
+    THTTP   [label="Transport::HTTP\nGET info/refs\nPOST git-upload-pack" fillcolor="#16a34a" fontcolor="white"]
+    TPIPE   [label="Transport::Pipe\n(abstract)\nstdin/stdout subprocess" fillcolor="#166534" fontcolor="white"]
+    TSSH    [label="Transport::SSH\nspawns ssh ->\ngit-upload-pack" fillcolor="#15803d" fontcolor="white"]
+    TFILE   [label="Transport::File\nspawns git-upload-pack\ndirectly" fillcolor="#15803d" fontcolor="white"]
+    TSSH -> TPIPE [dir=back xlabel="extends" style=dashed color="#4ade80"]
+    TFILE -> TPIPE [dir=back xlabel="extends" style=dashed color="#4ade80"]
+  }
+
+  // ── Protocol Layer ───────────────────────────────────────────────────────────
+  subgraph cluster_protocol {
+    label="Protocol Layer"
+    fontcolor="#fde68a"
+    fontsize=13
+    fontname="Helvetica Neue Bold,Helvetica,Arial,sans-serif"
+    style="filled,rounded"
+    fillcolor="#451a03"
+    color="#f59e0b"
+    penwidth=2
+
+    NEG      [label="Protocol::Negotiator\ndetect v1 vs v2" fillcolor="#b45309" fontcolor="white"]
+    V1       [label="Protocol::V1\nref-advertisement\nwant/have/done/NAK" fillcolor="#d97706" fontcolor="white"]
+    V2       [label="Protocol::V2\nls-refs + fetch\n(stateless)" fillcolor="#d97706" fontcolor="white"]
+    PKTLINE  [label="PktLine\nReader / Writer\nframing" fillcolor="#92400e" fontcolor="white"]
+    SIDEBAND [label="SidebandReader\nunwrap side-band-64k\n(progress + pack data)" fillcolor="#92400e" fontcolor="white"]
+    CAPS     [label="CapabilitySet\nfeature negotiation" fillcolor="#78350f" fontcolor="white"]
+    REF      [label="Ref\nnamed pointer to ObjectId\n(branch / tag / HEAD)" fillcolor="#a16207" fontcolor="white"]
+    PROGMSG  [label="Protocol::ProgressMessage\nphase + received +\ntotal + object count" fillcolor="#6d28d9" fontcolor="white"]
+    PROGCB   [label="Protocol::ProgressCallback\nProc(ProgressMessage, Nil)" fillcolor="#5b21b6" fontcolor="white"]
+  }
+
+  // ── Pack Layer ───────────────────────────────────────────────────────────────
+  subgraph cluster_pack {
+    label="Pack Layer"
+    fontcolor="#e9d5ff"
+    fontsize=13
+    fontname="Helvetica Neue Bold,Helvetica,Arial,sans-serif"
+    style="filled,rounded"
+    fillcolor="#3b0764"
+    color="#a855f7"
+    penwidth=2
+
+    PACKFILE  [label="Pack::File\n.receive — write\nraw packfile" fillcolor="#7e22ce" fontcolor="white"]
+    SCANNER   [label="Pack::Scanner\ntype+size varints\nzlib inflate" fillcolor="#9333ea" fontcolor="white"]
+    RESOLVER  [label="Pack::Resolver\nresolve OFS/REF deltas\nthin-pack fallback" fillcolor="#9333ea" fontcolor="white"]
+    DELTA     [label="Pack::Delta\napply COPY/ADD\ninstructions" fillcolor="#6b21a8" fontcolor="white"]
+    IDXWRITER [label="Pack::IndexWriter\nwrite .idx v2" fillcolor="#6b21a8" fontcolor="white"]
+    INFLATE   [label="Pack::Inflate\nzlib wrapper" fillcolor="#581c87" fontcolor="white"]
+  }
+
+  // ── Object Layer ─────────────────────────────────────────────────────────────
+  subgraph cluster_objects {
+    label="Object Layer"
+    fontcolor="#a5f3fc"
+    fontsize=13
+    fontname="Helvetica Neue Bold,Helvetica,Arial,sans-serif"
+    style="filled,rounded"
+    fillcolor="#082f49"
+    color="#06b6d4"
+    penwidth=2
+
+    BLOBSOURCE [label="Object::BlobSource\n(abstract)\n[](oid) → {type, data}?" fillcolor="#164e63" fontcolor="white"]
+    STORE  [label="Object::Store\nmulti-pack SHA1 lookup\nloose + packed objects" fillcolor="#0e7490" fontcolor="white"]
+    COMMIT [label="Object::Commit\nparse commit text" fillcolor="#0891b2" fontcolor="white"]
+    TREE   [label="Object::Tree\nparse tree binary" fillcolor="#0891b2" fontcolor="white"]
+    TAG    [label="Object::Tag\nparse annotated tag" fillcolor="#0891b2" fontcolor="white"]
+    OID    [label="ObjectId\nSHA1 value object" fillcolor="#155e75" fontcolor="white"]
+    STORE    -> BLOBSOURCE [dir=back xlabel="extends" style=dashed color="#67e8f9"]
+  }
+
+  // ── Repository Layer ─────────────────────────────────────────────────────────
+  subgraph cluster_repo {
+    label="Repository Layer"
+    fontcolor="#fed7aa"
+    fontsize=13
+    fontname="Helvetica Neue Bold,Helvetica,Arial,sans-serif"
+    style="filled,rounded"
+    fillcolor="#431407"
+    color="#f97316"
+    penwidth=2
+
+    REPOSITORY [label="Repository\nHEAD / refs / config\npackfiles / reflogs" fillcolor="#c2410c" fontcolor="white"]
+    CONFIG     [label="Repository::Config\nread/write .git/config" fillcolor="#ea580c" fontcolor="white"]
+    LOCKFILE   [label="Repository::LockFile\natomic file writes" fillcolor="#9a3412" fontcolor="white"]
+    SUBMODULE  [label="Repository::Submodule\ninit_all / update_all" fillcolor="#9a3412" fontcolor="white"]
+  }
+
+  // ── Worktree ──────────────────────────────────────────────────────────────────
+  subgraph cluster_worktree {
+    label="Worktree"
+    fontcolor="#bbf7d0"
+    fontsize=13
+    fontname="Helvetica Neue Bold,Helvetica,Arial,sans-serif"
+    style="filled,rounded"
+    fillcolor="#052e16"
+    color="#4ade80"
+    penwidth=2
+
+    APPLIER    [label="Worktree::Applier\ndiff + checkout\norchestration" fillcolor="#166534" fontcolor="white"]
+    CHECKOUT   [label="Worktree::Checkout\nwrite blobs\napply incremental changes" fillcolor="#166534" fontcolor="white"]
+    TREEDIFF   [label="Worktree::Diff\nrecursive diff\nadd/modify/delete list" fillcolor="#15803d" fontcolor="white"]
+    TREECHANGE [label="Worktree::Change\nadd / modify / delete\nentry with new blob OID" fillcolor="#14532d" fontcolor="white"]
+    TREEDIFF -> TREECHANGE [xlabel="produces" style=dashed color="#4ade80"]
+    TREECHANGE -> CHECKOUT [xlabel="consumed by" style=dashed color="#4ade80"]
+  }
+
+  // ── Commit Graph ──────────────────────────────────────────────────────────────
+  subgraph cluster_commitgraph {
+    label="Commit Graph"
+    fontcolor="#a5f3fc"
+    fontsize=13
+    fontname="Helvetica Neue Bold,Helvetica,Arial,sans-serif"
+    style="filled,rounded"
+    fillcolor="#082f49"
+    color="#06b6d4"
+    penwidth=2
+
+    COMMITGRAPH [label="CommitGraph::Chain\nBFS ancestry check\nfast-forward validation" fillcolor="#0e7490" fontcolor="white"]
+  }
+
+  // ── LFS ──────────────────────────────────────────────────────────────────────
+  subgraph cluster_lfs {
+    label="Git LFS"
+    fontcolor="#fecdd3"
+    fontsize=13
+    fontname="Helvetica Neue Bold,Helvetica,Arial,sans-serif"
+    style="filled,rounded"
+    fillcolor="#4c0519"
+    color="#f43f5e"
+    penwidth=2
+
+    LFSCLIENT [label="LFS::Client\nbatch download\nfrom LFS server" fillcolor="#be123c" fontcolor="white"]
+    LFSPTR    [label="LFS::Pointer\nparse pointer blobs" fillcolor="#9f1239" fontcolor="white"]
+  }
+
+  // ── Error Hierarchy ──────────────────────────────────────────────────────────
+  subgraph cluster_errors {
+    label="Error Hierarchy"
+    fontcolor="#e2e8f0"
+    fontsize=13
+    fontname="Helvetica Neue Bold,Helvetica,Arial,sans-serif"
+    style="filled,rounded"
+    fillcolor="#1e293b"
+    color="#64748b"
+    penwidth=2
+
+    ERBASE   [label="Git::Error\n(base)" fillcolor="#334155" fontcolor="white"]
+    ERRTRANS [label="TransportError\nnetwork / subprocess" fillcolor="#475569" fontcolor="white"]
+    ERRAUTH  [label="AuthenticationError\n401 / 403" fillcolor="#475569" fontcolor="white"]
+    ERRPROTO [label="ProtocolError\nmalformed pkt-line" fillcolor="#475569" fontcolor="white"]
+    ERRFF    [label="NonFastForwardError\ndivergent history" fillcolor="#475569" fontcolor="white"]
+    ERRREPO  [label="RepositoryError\nbad local state" fillcolor="#475569" fontcolor="white"]
+    ERRLOCK  [label="LockError\nlock file contention" fillcolor="#475569" fontcolor="white"]
+    ERRPACK  [label="Pack::FileError\ncorrupt packfile" fillcolor="#475569" fontcolor="white"]
+    ERRTRANS -> ERBASE  [style=dashed color="#64748b"]
+    ERRAUTH  -> ERRTRANS [style=dashed color="#64748b"]
+    ERRPROTO -> ERBASE  [style=dashed color="#64748b"]
+    ERRFF    -> ERBASE  [style=dashed color="#64748b"]
+    ERRREPO  -> ERBASE  [style=dashed color="#64748b"]
+    ERRLOCK  -> ERBASE  [style=dashed color="#64748b"]
+    ERRPACK  -> ERBASE  [style=dashed color="#64748b"]
+  }
+
+  // ── Edges ────────────────────────────────────────────────────────────────────
+
+  // Client → Transport
+  CLIENT -> URL        [xlabel="parse url"]
+  URL    -> THTTP
+  URL    -> TSSH
+  URL    -> TFILE
+  CREDS  -> THTTP      [xlabel="auth header"]
+
+  // Transport → Protocol
+  THTTP  -> NEG        [xlabel="handshake_io"]
+  TPIPE  -> NEG        [xlabel="handshake_io"]
+  NEG    -> PKTLINE    [xlabel="read first pkt-line"]
+  NEG    -> V1
+  NEG    -> V2
+  V1     -> PKTLINE
+  V2     -> PKTLINE
+  V1     -> CAPS
+  V2     -> CAPS
+  V1     -> SIDEBAND   [xlabel="fetch stream"]
+  V2     -> SIDEBAND   [xlabel="fetch stream"]
+
+  // Protocol produces Refs
+  V1     -> REF        [xlabel="ref advertisement"]
+  V2     -> REF        [xlabel="ls-refs response"]
+
+  // Protocol → Pack
+  SIDEBAND -> PACKFILE [xlabel="pack IO"]
+  PACKFILE -> SCANNER
+  SCANNER  -> INFLATE
+  SCANNER  -> DELTA
+  RESOLVER -> SCANNER  [xlabel="re-read entries"]
+  RESOLVER -> DELTA    [xlabel="apply chain"]
+  RESOLVER -> IDXWRITER
+
+  // Pack → Objects
+  RESOLVER -> BLOBSOURCE [dir=back xlabel="extends" style=dashed color="#67e8f9"]
+  RESOLVER -> STORE    [xlabel="thin-pack fallback"]
+  STORE    -> OID
+  STORE    -> COMMIT
+  STORE    -> TREE
+  STORE    -> TAG
+
+  // Client → Repository
+  CLIENT -> REPOSITORY [xlabel="init / open"]
+  REPOSITORY -> CONFIG
+  REPOSITORY -> LOCKFILE
+
+  // Ref → Client → Repository
+  REF -> CLIENT       [xlabel="target ref\nselection"]
+  CLIENT -> REPOSITORY [xlabel="write_packed_refs\nwrite_head / tracking"]
+
+  // Client orchestration
+  CLIENT -> COMMITGRAPH [xlabel="ancestor?"]
+  CLIENT -> APPLIER     [xlabel="apply changes"]
+  CLIENT -> SUBMODULE   [xlabel="init / update"]
+  APPLIER -> TREEDIFF   [xlabel="diff trees"]
+  APPLIER -> CHECKOUT   [xlabel="apply changes"]
+
+  // Checkout/Diff ↔ BlobSource abstraction
+  CHECKOUT -> BLOBSOURCE [xlabel="blob lookup"]
+  CHECKOUT -> LFSCLIENT  [xlabel="resolve LFS pointer"]
+  CHECKOUT -> LFSPTR     [xlabel="detect pointer"]
+  TREEDIFF -> BLOBSOURCE [xlabel="load tree objects"]
+
+  // CommitGraph
+  COMMITGRAPH -> STORE    [xlabel="ancestry walk"]
+  COMMITGRAPH -> RESOLVER [xlabel="ancestry walk"]
+
+  // LFS
+  LFSCLIENT -> THTTP [xlabel="POST /objects/batch"]
+
+  // Progress
+  SIDEBAND -> PROGMSG  [xlabel="emit progress"]
+  PROGMSG  -> PROGCB   [xlabel="delivered via"]
+  CLIENT   -> PROGCB   [xlabel="on_progress\ncallback param" style=dashed color="#8b5cf6"]
+
+  // Submodule proc injection (no hard dep on Client)
+  SUBMODULE -> CLIENT [xlabel="injects CloneCallback\n/ ResetCallback" style=dashed color="#f97316"]
+}
