@@ -69,7 +69,7 @@ require "./git/client"
 #
 # For the `git_dir:` option (separate git directory) use `Client.clone` directly.
 module Git
-  VERSION = "0.1.0"
+  VERSION = "0.1.1"
 
   # Parses a 40-character hex string into an `Object::Id`. Shorthand for `Object::Id.from_hex(hex)`.
   def self.oid(hex : String) : Object::Id
