@@ -18,14 +18,14 @@ module Git
       # Loads and parses the commit-graph file at *path*.
       # Returns `nil` when the file does not exist.
       def self.load(path : String, fs : FileSystem = FileSystem::Local.new) : CommitGraph::File?
-        return nil unless fs.file?(path)
+        return unless fs.file?(path)
         new(fs.read(path).to_slice)
       end
 
       # Returns the parent `Object::Id`s for *oid*, or `nil` if *oid* is not in the graph.
       def parents_of(oid : Object::Id) : Array(Object::Id)?
         pos = oid_position(oid)
-        return nil if pos.nil?
+        return if pos.nil?
         parents_at(pos)
       end
 

@@ -80,7 +80,10 @@ describe Git::Transport::HTTP do
       begin
         url = Git.remote("http://127.0.0.1:#{address.port}/repo.git")
         transport = Git::Transport::HTTP.new(url)
-        transport.info_refs_body rescue Git::TransportError
+        begin
+          transport.info_refs_body
+        rescue Git::TransportError
+        end
         captured.receive?.should eq("version=2")
       ensure
         server.close
@@ -100,7 +103,10 @@ describe Git::Transport::HTTP do
       begin
         url = Git.remote("http://127.0.0.1:#{address.port}/repo.git")
         transport = Git::Transport::HTTP.new(url)
-        transport.fetch_pack(Bytes.empty) { } rescue Git::TransportError
+        begin
+          transport.fetch_pack(Bytes.empty) { }
+        rescue Git::TransportError
+        end
         captured.receive?.should eq("version=2")
       ensure
         server.close
@@ -122,7 +128,10 @@ describe Git::Transport::HTTP do
       begin
         url = Git.remote("http://127.0.0.1:#{address.port}/repo.git")
         transport = Git::Transport::HTTP.new(url, Git.bearer("test-token"))
-        transport.info_refs_body rescue Git::TransportError
+        begin
+          transport.info_refs_body
+        rescue Git::TransportError
+        end
         captured.receive?.should eq("Bearer test-token")
       ensure
         server.close
@@ -142,7 +151,10 @@ describe Git::Transport::HTTP do
       begin
         url = Git.remote("http://127.0.0.1:#{address.port}/repo.git")
         transport = Git::Transport::HTTP.new(url, Git.basic("user", "secret"))
-        transport.info_refs_body rescue Git::TransportError
+        begin
+          transport.info_refs_body
+        rescue Git::TransportError
+        end
         captured.receive?.should eq("Basic #{Base64.strict_encode("user:secret")}")
       ensure
         server.close
@@ -162,7 +174,10 @@ describe Git::Transport::HTTP do
       begin
         url = Git.remote("http://127.0.0.1:#{address.port}/repo.git")
         transport = Git::Transport::HTTP.new(url, Git.bearer("post-token"))
-        transport.fetch_pack(Bytes.empty) { } rescue Git::TransportError
+        begin
+          transport.fetch_pack(Bytes.empty) { }
+        rescue Git::TransportError
+        end
         captured.receive?.should eq("Bearer post-token")
       ensure
         server.close

@@ -679,7 +679,10 @@ describe "Git::Client — HTTP transport (Smart HTTP v2)", tags: "integration" d
     address = server.bind_tcp("127.0.0.1", 0)
     spawn server.listen
     begin
-      Git::Client.clone("http://127.0.0.1:#{address.port}/repo.git", Git.safe_fs(clone_dir)) rescue Git::Error
+      begin
+        Git::Client.clone("http://127.0.0.1:#{address.port}/repo.git", Git.safe_fs(clone_dir))
+      rescue Git::Error
+      end
       captured.receive?.should eq("version=2")
     ensure
       server.close

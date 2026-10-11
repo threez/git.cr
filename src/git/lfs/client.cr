@@ -45,11 +45,11 @@ module Git
       # Reads `.lfsconfig` from *work_dir* and returns a Client if a valid LFS url is found.
       def self.from_lfs_config?(work_dir : String, credentials : Transport::Credentials? = nil, fs : FileSystem = FileSystem::Local.new) : Client?
         config_path = File.join(work_dir, ".lfsconfig")
-        return nil unless fs.file?(config_path)
+        return unless fs.file?(config_path)
         config = Repository::Config.parse(fs.read(config_path))
-        url = config.sections["lfs"]?.try(&.["url"]?) || return nil
+        url = config.sections["lfs"]?.try(&.["url"]?) || return
         remote = Git.remote(url)
-        return nil unless remote.http?
+        return unless remote.http?
         new(remote, credentials)
       end
 
@@ -105,8 +105,8 @@ module Git
       end
 
       private def parse_response_headers(json_val : JSON::Any?) : Hash(String, String)?
-        return nil unless json_val
-        hash = json_val.as_h? || return nil
+        return unless json_val
+        hash = json_val.as_h? || return
         headers = {} of String => String
         hash.each { |key, val| headers[key] = val.as_s? || "" }
         headers.empty? ? nil : headers
