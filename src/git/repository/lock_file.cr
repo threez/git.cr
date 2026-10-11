@@ -23,18 +23,15 @@ module Git
         end
       end
 
-      committed = false
+      io = IO::FileDescriptor.new(fd)
       begin
-        io = IO::FileDescriptor.new(fd)
-        fd = -1 # io owns the fd from here; avoid double-close in ensure
         yield io
         io.flush
         io.close
         fs.rename(lock_path, path)
-        committed = true
-      ensure
-        LibC.close(fd) if fd >= 0
-        fs.delete(lock_path) rescue nil unless committed
+      rescue ex
+        fs.delete(lock_path) rescue nil
+        raise ex
       end
     end
   end

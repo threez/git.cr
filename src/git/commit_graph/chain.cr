@@ -18,7 +18,7 @@ module Git
             graph_path = ::File.join(git_dir, "objects", "info", "commit-graphs", "graph-#{hash}.graph")
             File.load(graph_path, fs)
           end
-          return nil if files.empty?
+          return if files.empty?
           new(files)
         else
           single = ::File.join(git_dir, "objects", "info", "commit-graph")

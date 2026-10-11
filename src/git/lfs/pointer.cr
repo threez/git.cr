@@ -16,12 +16,12 @@ module Git
       # Returns a `Pointer` if *data* is a valid LFS pointer blob, `nil` otherwise.
       # LFS pointers are always < 200 bytes, so large blobs are rejected cheaply.
       def self.parse?(data : Bytes) : Pointer?
-        return nil if data.size > 200
+        return if data.size > 200
         text = String.new(data)
-        return nil unless text.starts_with?(POINTER_HEADER)
+        return unless text.starts_with?(POINTER_HEADER)
         oid = text.match(/^oid sha256:([0-9a-f]{64})$/m).try(&.[1])
         size = text.match(/^size (\d+)$/m).try(&.[1].to_i64?)
-        return nil unless oid && size
+        return unless oid && size
         new(oid, size)
       end
     end
